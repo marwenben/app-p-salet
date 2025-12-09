@@ -2147,3 +2147,498 @@ function openNoteDialog(dayNumber, notes) {
 }
 
 console.log('✅ Coran bilingue et notes Ramadan chargés!');
+// =============================================
+// CORRECTIFS URGENTS
+// À ajouter À LA FIN de script.js
+// =============================================
+
+// =============================================
+// CORRECTIF 1 : NOTIFICATIONS
+// Vérifie l'état avant de redemander
+// =============================================
+
+// Remplacer la fonction requestNotificationPermission
+window.requestNotificationPermission = async function() {
+    console.log('🔔 Vérification permission notifications...');
+    
+    if (!("Notification" in window)) {
+        alert("Votre navigateur ne supporte pas les notifications.");
+        return false;
+    }
+    
+    // VÉRIFIER D'ABORD si déjà autorisé
+    if (Notification.permission === "granted") {
+        console.log('✅ Notifications DÉJÀ autorisées !');
+        notificationConfig.enabled = true;
+        saveNotificationConfig();
+        
+        // Mettre à jour le bouton
+        const btn = document.getElementById('enable-browser-notifications');
+        if (btn) {
+            btn.innerHTML = '<span>✅ Notifications activées !</span>';
+            btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+            btn.disabled = true;
+        }
+        return true;
+    }
+    
+    // Si pas encore autorisé, demander
+    if (Notification.permission !== "denied") {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                console.log('✅ Permission ACCORDÉE !');
+                notificationConfig.enabled = true;
+                saveNotificationConfig();
+                showNotificationSuccess("Notifications activées !");
+                return true;
+            } else {
+                console.log('❌ Permission REFUSÉE');
+                alert("Vous avez refusé les notifications. Vous pouvez les réactiver dans les paramètres de votre navigateur.");
+            }
+        } catch (error) {
+            console.error('Erreur demande permission:', error);
+        }
+    }
+    
+    if (Notification.permission === "denied") {
+        alert("Les notifications ont été bloquées. Veuillez les autoriser dans les paramètres de votre navigateur.");
+    }
+    
+    return false;
+};
+
+// Au chargement, vérifier l'état des notifications
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        // Vérifier si les notifications sont déjà autorisées
+        if (Notification.permission === "granted") {
+            console.log('✅ Notifications déjà autorisées au démarrage');
+            const btn = document.getElementById('enable-browser-notifications');
+            if (btn) {
+                btn.innerHTML = '<span>✅ Notifications activées !</span>';
+                btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+                btn.disabled = true;
+            }
+        }
+    }, 2000);
+});
+
+// =============================================
+// CORRECTIF 2 : CORAN FRANÇAIS
+// Affichage mobile optimisé
+// =============================================
+
+// Fonction pour créer les boutons de mode Coran (version mobile)
+function createQuranModeButtons() {
+    console.log('📖 Création boutons mode Coran...');
+    
+    // Vérifier si déjà créés
+    if (document.getElementById('mode-arabic')) {
+        console.log('✅ Boutons mode Coran déjà créés');
+        return;
+    }
+    
+    const loadBtn = document.getElementById('load-surah-btn');
+    if (!loadBtn) {
+        console.error('❌ Bouton load-surah-btn introuvable');
+        return;
+    }
+    
+    const quranControls = loadBtn.parentElement;
+    
+    // Créer le conteneur des modes
+    const modeContainer = document.createElement('div');
+    modeContainer.className = 'quran-mode-selector';
+    modeContainer.style.cssText = `
+        margin: 20px 0;
+        padding: 15px;
+        background: rgba(30, 60, 114, 0.05);
+        border-radius: 15px;
+    `;
+    
+    modeContainer.innerHTML = `
+        <label style="
+            display: block;
+            margin-bottom: 15px;
+            color: #1e3c72;
+            font-weight: 700;
+            font-size: 1.1em;
+            text-align: center;
+        ">
+            <span data-fr="📖 Mode d'affichage" data-ar="📖 نمط العرض">📖 Mode d'affichage</span>
+        </label>
+        <div style="
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        ">
+            <button id="mode-arabic" class="mode-btn" style="
+                width: 100%;
+                padding: 15px;
+                border: 3px solid #1e3c72;
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                color: white;
+                border-radius: 12px;
+                cursor: pointer;
+                font-weight: 700;
+                font-size: 1em;
+                transition: all 0.3s;
+                box-shadow: 0 4px 10px rgba(30, 60, 114, 0.3);
+            ">
+                <span data-fr="🔤 Arabe seul" data-ar="🔤 عربي فقط">🔤 Arabe seul</span>
+            </button>
+            <button id="mode-french" class="mode-btn" style="
+                width: 100%;
+                padding: 15px;
+                border: 3px solid #1e3c72;
+                background: white;
+                color: #1e3c72;
+                border-radius: 12px;
+                cursor: pointer;
+                font-weight: 700;
+                font-size: 1em;
+                transition: all 0.3s;
+            ">
+                <span data-fr="🇫🇷 Français seul" data-ar="🇫🇷 فرنسي فقط">🇫🇷 Français seul</span>
+            </button>
+            <button id="mode-bilingual" class="mode-btn" style="
+                width: 100%;
+                padding: 15px;
+                border: 3px solid #1e3c72;
+                background: white;
+                color: #1e3c72;
+                border-radius: 12px;
+                cursor: pointer;
+                font-weight: 700;
+                font-size: 1em;
+                transition: all 0.3s;
+            ">
+                <span data-fr="🌍 Arabe + Français" data-ar="🌍 عربي + فرنسي">🌍 Arabe + Français</span>
+            </button>
+        </div>
+        <div style="
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #6c757d;
+            font-style: italic;
+        ">
+            <span data-fr="✨ Mode bilingue recommandé pour apprendre" data-ar="✨ الوضع ثنائي اللغة موصى به للتعلم">✨ Mode bilingue recommandé pour apprendre</span>
+        </div>
+    `;
+    
+    // Insérer avant le bouton Charger
+    quranControls.insertBefore(modeContainer, loadBtn);
+    
+    console.log('✅ Boutons mode Coran créés !');
+    
+    // Ajouter les événements
+    document.getElementById('mode-arabic').addEventListener('click', function() {
+        quranDisplayMode = 'arabic';
+        updateModeButtonsStyle();
+    });
+    
+    document.getElementById('mode-french').addEventListener('click', function() {
+        quranDisplayMode = 'french';
+        updateModeButtonsStyle();
+    });
+    
+    document.getElementById('mode-bilingual').addEventListener('click', function() {
+        quranDisplayMode = 'bilingual';
+        updateModeButtonsStyle();
+    });
+}
+
+// Fonction pour mettre à jour le style des boutons
+function updateModeButtonsStyle() {
+    console.log('🎨 Mise à jour style boutons, mode:', quranDisplayMode);
+    
+    // Réinitialiser tous les boutons
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.style.background = 'white';
+        btn.style.color = '#1e3c72';
+        btn.style.boxShadow = 'none';
+    });
+    
+    // Activer le bouton sélectionné
+    let activeBtn;
+    if (quranDisplayMode === 'arabic') {
+        activeBtn = document.getElementById('mode-arabic');
+    } else if (quranDisplayMode === 'french') {
+        activeBtn = document.getElementById('mode-french');
+    } else {
+        activeBtn = document.getElementById('mode-bilingual');
+    }
+    
+    if (activeBtn) {
+        activeBtn.style.background = 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)';
+        activeBtn.style.color = 'white';
+        activeBtn.style.boxShadow = '0 4px 10px rgba(30, 60, 114, 0.3)';
+    }
+}
+
+// Créer les boutons quand le modal Coran s'ouvre
+document.getElementById('quran-btn').addEventListener('click', function() {
+    console.log('📖 Ouverture modal Coran');
+    setTimeout(() => {
+        createQuranModeButtons();
+    }, 100);
+});
+
+// Aussi créer au chargement si le modal est déjà là
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const quranModal = document.getElementById('quran-modal');
+        if (quranModal && quranModal.classList.contains('active')) {
+            createQuranModeButtons();
+        }
+    }, 2000);
+});
+
+// =============================================
+// CORRECTIF 3 : CHARGEMENT CORAN BILINGUE
+// Version mobile optimisée
+// =============================================
+
+// Variable globale pour le mode d'affichage
+if (typeof quranDisplayMode === 'undefined') {
+    var quranDisplayMode = 'bilingual';
+}
+
+// Remplacer le gestionnaire de chargement de sourate
+const loadSurahBtn = document.getElementById('load-surah-btn');
+if (loadSurahBtn) {
+    // Supprimer les anciens gestionnaires
+    const newLoadBtn = loadSurahBtn.cloneNode(true);
+    loadSurahBtn.parentNode.replaceChild(newLoadBtn, loadSurahBtn);
+    
+    newLoadBtn.addEventListener('click', async function() {
+        console.log('📖 Chargement sourate, mode:', quranDisplayMode);
+        
+        const surahNumber = document.getElementById('surah-select').value;
+        const quranTextDiv = document.getElementById('quran-text');
+        
+        if (!quranTextDiv) {
+            alert('Erreur: Zone de texte introuvable');
+            return;
+        }
+        
+        quranTextDiv.innerHTML = '<p class="quran-info" style="text-align: center; padding: 30px; font-size: 1.2em;">⏳ Chargement du Coran...</p>';
+        
+        try {
+            console.log('📡 Appel API pour sourate', surahNumber);
+            
+            // Charger les informations
+            const infoResponse = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`);
+            const infoData = await infoResponse.json();
+            
+            // Charger le texte arabe
+            const arabicResponse = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/ar.alafasy`);
+            const arabicData = await arabicResponse.json();
+            
+            // Charger la traduction française
+            const frenchResponse = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/fr.hamidullah`);
+            const frenchData = await frenchResponse.json();
+            
+            console.log('✅ Données reçues:', {
+                info: infoData.status,
+                arabic: arabicData.status,
+                french: frenchData.status
+            });
+            
+            if (infoData.status === 'OK' && arabicData.status === 'OK' && frenchData.status === 'OK') {
+                const surahInfo = infoData.data;
+                const arabicAyahs = arabicData.data.ayahs;
+                const frenchAyahs = frenchData.data.ayahs;
+                
+                let html = `
+                    <div style="
+                        text-align: center;
+                        padding: 20px;
+                        background: linear-gradient(135deg, rgba(30, 60, 114, 0.1) 0%, rgba(42, 82, 152, 0.1) 100%);
+                        border-radius: 15px;
+                        margin-bottom: 25px;
+                    ">
+                        <h3 style="color: #1e3c72; margin-bottom: 10px; font-size: 1.5em;">
+                            سورة ${surahInfo.name} - ${surahInfo.englishName}
+                        </h3>
+                        <p style="font-size: 0.9em; color: #6c757d; margin: 5px 0;">
+                            ${surahInfo.numberOfAyahs} آيات - ${surahInfo.revelationType === 'Meccan' ? 'مكية' : 'مدنية'}
+                        </p>
+                    </div>
+                `;
+                
+                // Bismillah (sauf sourates 9 et 1)
+                if (surahNumber !== '9' && surahNumber !== '1') {
+                    html += `
+                        <div style="
+                            text-align: center;
+                            font-size: 1.5em;
+                            color: #2a5298;
+                            margin-bottom: 30px;
+                            padding: 20px;
+                            background: rgba(42, 82, 152, 0.1);
+                            border-radius: 15px;
+                            font-family: 'Amiri', serif;
+                        ">
+                            بِسْمِ ٱللَّٰهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                        </div>
+                    `;
+                }
+                
+                // Afficher les versets selon le mode
+                for (let i = 0; i < arabicAyahs.length; i++) {
+                    const arabicAyah = arabicAyahs[i];
+                    const frenchAyah = frenchAyahs[i];
+                    
+                    if (quranDisplayMode === 'arabic') {
+                        // Arabe seul - GRAND FORMAT
+                        html += `
+                            <div style="
+                                margin-bottom: 25px;
+                                padding: 20px;
+                                background: rgba(30, 60, 114, 0.05);
+                                border-radius: 15px;
+                                border-right: 5px solid #2a5298;
+                            ">
+                                <div style="text-align: right;">
+                                    <span style="
+                                        background: #2a5298;
+                                        color: white;
+                                        padding: 8px 15px;
+                                        border-radius: 20px;
+                                        font-size: 1em;
+                                        display: inline-block;
+                                        margin-bottom: 15px;
+                                    ">﴿${convertToArabicNumber(arabicAyah.numberInSurah)}﴾</span>
+                                </div>
+                                <p style="
+                                    font-size: 1.8em;
+                                    line-height: 3;
+                                    font-family: 'Amiri', serif;
+                                    direction: rtl;
+                                    text-align: right;
+                                    color: #1e3c72;
+                                    margin: 0;
+                                ">${arabicAyah.text}</p>
+                            </div>
+                        `;
+                    } else if (quranDisplayMode === 'french') {
+                        // Français seul
+                        html += `
+                            <div style="
+                                margin-bottom: 20px;
+                                padding: 20px;
+                                background: rgba(30, 60, 114, 0.05);
+                                border-radius: 15px;
+                                border-left: 5px solid #2a5298;
+                            ">
+                                <span style="
+                                    background: #2a5298;
+                                    color: white;
+                                    padding: 6px 12px;
+                                    border-radius: 15px;
+                                    font-size: 0.9em;
+                                    margin-right: 10px;
+                                ">${arabicAyah.numberInSurah}</span>
+                                <span style="
+                                    font-size: 1.15em;
+                                    line-height: 1.9;
+                                    color: #333;
+                                ">${frenchAyah.text}</span>
+                            </div>
+                        `;
+                    } else {
+                        // Bilingue - ARABE + FRANÇAIS
+                        html += `
+                            <div style="
+                                margin-bottom: 30px;
+                                padding: 20px;
+                                background: rgba(30, 60, 114, 0.05);
+                                border-radius: 15px;
+                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                            ">
+                                <!-- ARABE -->
+                                <div style="
+                                    margin-bottom: 20px;
+                                    padding-bottom: 20px;
+                                    border-bottom: 2px solid rgba(42, 82, 152, 0.2);
+                                ">
+                                    <div style="text-align: right;">
+                                        <span style="
+                                            background: #2a5298;
+                                            color: white;
+                                            padding: 8px 15px;
+                                            border-radius: 20px;
+                                            font-size: 1em;
+                                            display: inline-block;
+                                            margin-bottom: 15px;
+                                        ">﴿${convertToArabicNumber(arabicAyah.numberInSurah)}﴾</span>
+                                    </div>
+                                    <p style="
+                                        font-size: 1.6em;
+                                        line-height: 2.8;
+                                        font-family: 'Amiri', serif;
+                                        direction: rtl;
+                                        text-align: right;
+                                        color: #1e3c72;
+                                        margin: 0;
+                                    ">${arabicAyah.text}</p>
+                                </div>
+                                
+                                <!-- FRANÇAIS -->
+                                <div>
+                                    <span style="
+                                        background: #6c757d;
+                                        color: white;
+                                        padding: 5px 10px;
+                                        border-radius: 12px;
+                                        font-size: 0.85em;
+                                        margin-right: 10px;
+                                    ">${arabicAyah.numberInSurah}</span>
+                                    <span style="
+                                        font-size: 1.1em;
+                                        line-height: 1.9;
+                                        color: #555;
+                                        font-style: italic;
+                                    ">${frenchAyah.text}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                quranTextDiv.innerHTML = html;
+                quranTextDiv.scrollTop = 0;
+                
+                console.log('✅ Sourate affichée avec succès !');
+                
+            } else {
+                throw new Error('Erreur API');
+            }
+        } catch (error) {
+            console.error('❌ Erreur chargement Coran:', error);
+            quranTextDiv.innerHTML = `
+                <div style="text-align: center; padding: 30px;">
+                    <p style="color: #dc2626; font-size: 1.2em; margin-bottom: 15px;">❌ Erreur de chargement</p>
+                    <p style="color: #6c757d;">Vérifiez votre connexion internet et réessayez.</p>
+                    <button onclick="location.reload()" style="
+                        margin-top: 20px;
+                        padding: 12px 25px;
+                        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        font-size: 1em;
+                        cursor: pointer;
+                    ">🔄 Réessayer</button>
+                </div>
+            `;
+        }
+    });
+}
+
+console.log('✅ CORRECTIFS CHARGÉS !');
+console.log('📖 Mode Coran:', quranDisplayMode);
+console.log('🔔 Notifications:', Notification.permission);
